@@ -1,0 +1,61 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+
+<div class="row">
+
+    <!-- LEFT DETAILS -->
+    <div class="col-md-8">
+        <div class="card shadow p-4">
+
+            <h4>Details</h4>
+
+            <p><b>Document ID:</b> {{ report.document_id }}</p>
+            <p><b>Title:</b> {{ report.report_name }}</p>
+            <p><b>Division:</b> {{ report.division }}</p>
+            <p><b>Report Type:</b> {{ report.report_type }}</p>
+            <p><b>Date:</b> {{ report.report_date }}</p>
+            <p><b>Prepared By:</b> {{ report.prepared_by }}</p>
+
+            <hr>
+
+            <h5>Files</h5>
+
+            {% for file in report.files %}
+                <a href="/{{ file }}" target="_blank">
+                    {{ file.split('/')[-1].split('_',1)[-1] }}
+                </a><br>
+            {% endfor %}
+
+        </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="col-md-4">
+
+        <div class="card shadow p-3 mb-3 text-center">
+            <a href="/edit/{{ report.document_id }}" class="btn btn-primary">Edit</a>
+        </div>
+
+        <div class="card shadow p-3 mb-3 text-center">
+            <button class="btn btn-danger" onclick="deleteReport()">Delete</button>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+async function deleteReport(){
+
+    if(!confirm("Delete this report?")) return;
+
+    await fetch(`/api/delete-report/{{ report.document_id }}`, {
+        method: "DELETE"
+    });
+
+    window.location.href = "/search";
+}
+</script>
+
+{% endblock %}

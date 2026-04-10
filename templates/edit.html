@@ -1,0 +1,76 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+
+<div class="container mt-4">
+    <h2>Edit Report</h2>
+
+    <form id="editForm">
+
+        <input type="hidden" id="docId">
+
+        <input type="text" id="report_name" class="form-control mb-2" placeholder="Report Name">
+        <input type="text" id="report_type" class="form-control mb-2" placeholder="Type">
+        <input type="text" id="division" class="form-control mb-2" placeholder="Division">
+        <input type="text" id="equipment" class="form-control mb-2" placeholder="Equipment">
+        <input type="text" id="prepared_by" class="form-control mb-2" placeholder="Prepared By">
+        <input type="date" id="report_date" class="form-control mb-2">
+        <textarea id="summary" class="form-control mb-2" placeholder="Summary"></textarea>
+
+        <button class="btn btn-success">Update</button>
+
+    </form>
+</div>
+
+<script>
+
+const docId = "{{ document_id }}";
+document.getElementById('docId').value = docId;
+
+// 🔹 Load data
+fetch('/api/all-reports')
+.then(res => res.json())
+.then(data => {
+
+    let report = data.find(r => r.document_id === docId);
+
+    if(report){
+        document.getElementById('report_name').value = report.report_name;
+        document.getElementById('report_type').value = report.report_type;
+        document.getElementById('division').value = report.division;
+        document.getElementById('equipment').value = report.equipment;
+        document.getElementById('prepared_by').value = report.prepared_by || '';
+        document.getElementById('report_date').value = report.report_date;
+        document.getElementById('summary').value = report.summary || '';
+    }
+});
+
+
+// 🔹 Update
+document.getElementById('editForm').addEventListener('submit', function(e){
+    e.preventDefault();
+
+    fetch(`/api/update-report/${docId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            report_name: document.getElementById('report_name').value,
+            report_type: document.getElementById('report_type').value,
+            division: document.getElementById('division').value,
+            equipment: document.getElementById('equipment').value,
+            prepared_by: document.getElementById('prepared_by').value,
+            report_date: document.getElementById('report_date').value,
+            summary: document.getElementById('summary').value
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        alert(data.message);
+        window.location.href = "/";
+    });
+
+});
+
+</script>
+
+{% endblock %}

@@ -1,0 +1,106 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+
+<div class="row">
+
+    <!-- LEFT SIDE -->
+    <div class="col-lg-8">
+
+        <div class="card border-0 shadow">
+            <div class="card-header">
+                <h5>Action Details</h5>
+            </div>
+
+            <div class="card-body">
+
+                <div class="mb-3">
+                    <small class="text-muted">User</small>
+                    <div id="user" class="fw-bold"></div>
+                </div>
+
+                <div class="mb-3">
+                    <small class="text-muted">Action</small>
+                    <div id="action" class="fw-bold"></div>
+                </div>
+
+                <div class="mb-3">
+                    <small class="text-muted">Document ID</small>
+                    <div id="docId"></div>
+                </div>
+
+                <div class="mb-3">
+                    <small class="text-muted">Document Name</small>
+                    <div id="docName"></div>
+                </div>
+
+                <div class="mb-3">
+                    <small class="text-muted">Description</small>
+                    <div id="desc"></div>
+                </div>
+
+                <div class="mb-3">
+                    <small class="text-muted">Time</small>
+                    <div id="time"></div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div class="col-lg-4">
+
+        <div class="card border-0 shadow">
+            <div class="card-body">
+
+                <a href="/action-logs" class="btn btn-secondary w-100 mb-2">
+                    Back to Logs
+                </a>
+
+                <a href="/search" class="btn btn-primary w-100">
+                    Go to Reports
+                </a>
+
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const id = params.get("id");
+
+console.log("ID:", id);
+
+fetch(`/api/action-log/${id}`)
+  .then(res => {
+      if (!res.ok) {
+          throw new Error("API failed: " + res.status);
+      }
+      return res.json();
+  })
+  .then(log => {
+      console.log("LOG:", log);
+
+      document.getElementById("user").innerText = log.username || "-";
+      document.getElementById("action").innerText = log.action_type || "-";
+      document.getElementById("docId").innerText = log.document_id || "-";
+      document.getElementById("docName").innerText = log.document_name || "-";
+      document.getElementById("desc").innerText = log.description || "-";
+
+      // safer time handling
+      document.getElementById("time").innerText =
+          log.timestamp ? new Date(log.timestamp).toLocaleString() : "-";
+  })
+  .catch(err => {
+      console.error("ERROR:", err);
+
+      document.getElementById("user").innerText = "Error loading data";
+  });
+</script>
+
+{% endblock %}

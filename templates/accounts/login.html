@@ -1,0 +1,152 @@
+{% extends "layouts/base-fullscreen.html" %}
+
+{% block title %} Login {% endblock %}
+
+{% block content %}
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+
+<main>
+    <section class="vh-lg-100 mt-5 mt-lg-0 bg-soft d-flex align-items-center">
+        <div class="container">
+            <div class="row justify-content-center">
+
+                <div class="col-12 col-md-6 col-lg-5">
+
+                    <div class="card shadow border-0 rounded-lg">
+
+                        <div class="card-body p-4">
+
+                            <!-- Heading -->
+                            <h3 class="text-center mb-4 fw-bold">
+                                <i class="fas fa-user-circle me-2 text-primary"></i>
+                                Welcome Back
+                            </h3>
+
+                            <form onsubmit="login(event)">
+
+                                <!-- Username -->
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Username</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-user"></i>
+                                        </span>
+                                        <input type="text"
+                                               id="username"
+                                               class="form-control"
+                                               placeholder="Enter username"
+                                               required>
+                                    </div>
+                                </div>
+
+                                <!-- Password + Toggle -->
+                                <div class="form-group mb-3">
+                                    <label class="form-label">Password</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-lock"></i>
+                                        </span>
+
+                                        <input type="password"
+                                               id="password"
+                                               class="form-control"
+                                               placeholder="Enter password"
+                                               required>
+
+                                        <!--  Toggle -->
+                                        <span class="input-group-text" style="cursor:pointer;" onclick="togglePassword()">
+                                            <i id="eyeIcon" class="fas fa-eye"></i>
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Remember Me -->
+                                <div class="form-check mb-3">
+                                    <input class="form-check-input" type="checkbox" id="remember">
+                                    <label class="form-check-label">Remember me</label>
+                                </div>
+
+                                <!--  Error Message -->
+                                <div id="errorBox" class="alert alert-danger d-none p-2"></div>
+
+                                <!-- Button -->
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary">
+                                        Login
+                                    </button>
+                                </div>
+
+                            </form>
+
+                            <!-- Footer -->
+                            <div class="text-center mt-4">
+                                <small>
+                                    Don’t have an account?
+                                    <a href="/register" class="fw-bold">
+                                        Sign up
+                                    </a>
+                                </small>
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </section>
+</main>
+
+<script>
+
+//  Toggle Password
+function togglePassword() {
+    let pass = document.getElementById("password");
+    let icon = document.getElementById("eyeIcon");
+
+    if (pass.type === "password") {
+        pass.type = "text";
+        icon.classList.replace("fa-eye", "fa-eye-slash");
+    } else {
+        pass.type = "password";
+        icon.classList.replace("fa-eye-slash", "fa-eye");
+    }
+}
+
+//  Login
+async function login(e){
+    e.preventDefault();
+
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+    const remember = document.getElementById("remember").checked;
+    const errorBox = document.getElementById("errorBox");
+
+    errorBox.classList.add("d-none");
+
+    try{
+        const res = await fetch("/api/login", {
+            method: "POST",
+            headers: {"Content-Type": "application/json"},
+            body: JSON.stringify({ username, password, remember })
+        });
+
+        const data = await res.json();
+
+        if(res.ok){
+            window.location.href = "/";
+        } else {
+            errorBox.textContent = data.error || "Login failed";
+            errorBox.classList.remove("d-none");
+        }
+
+    } catch(err){
+        errorBox.textContent = "Server error";
+        errorBox.classList.remove("d-none");
+    }
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,278 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} Dashboard {% endblock %}
+
+{% block content %}
+
+<style>
+body {
+    background: #f4f6fb;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+/* Cards */
+.card {
+    border: none;
+    border-radius: 18px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    transition: 0.2s;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+}
+
+/* Gradient */
+.stat-card {
+    background: linear-gradient(135deg, #5b8def, #3a5bdc);
+    color: white;
+}
+
+/* Tables */
+.table thead {
+    background: #eef2ff;
+    font-weight: 600;
+}
+
+.table tbody tr:hover {
+    background: #f8f9ff;
+}
+</style>
+
+<!-- HEADER -->
+<div class="py-3 d-flex justify-content-between align-items-center">
+    <!-- ✅ Dynamic username -->
+    <h2 class="fw-bold">Welcome, {{ username }}</h2>
+</div>
+
+<!-- STATS -->
+<div class="row g-4">
+
+    <div class="col-md-3">
+        <div class="card stat-card p-4">
+            <h6>Total Reports</h6>
+            <h2 id="totalReports">0</h2>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card p-4">
+            <h6>Total Searches</h6>
+            <h2 id="totalSearches">0</h2>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card p-4">
+            <h6>Users</h6>
+            <h2 id="totalUsers">1</h2>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card p-4">
+            <h6>Status</h6>
+            <h2>Active</h2>
+        </div>
+    </div>
+
+</div>
+
+<!-- GRAPH WITH TOGGLE -->
+<div class="card p-4 mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-semibold">Uploads Trend</h5>
+
+        <div>
+            <button class="btn btn-sm btn-outline-primary me-1" onclick="loadChart('month')">Monthly</button>
+            <button class="btn btn-sm btn-outline-secondary" onclick="loadChart('day')">Daily</button>
+        </div>
+    </div>
+
+    <div style="height:300px;">
+        <canvas id="uploadChart"></canvas>
+    </div>
+</div>
+
+<!-- RECENT UPLOADS -->
+<div class="card mt-4">
+    <div class="card-header bg-white border-0">
+        <h5 class="fw-semibold">Recent Uploads</h5>
+    </div>
+    <div class="card-body">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Report</th>
+                    <th>Type</th>
+                    <th>Division</th>
+                    <th>Date</th>
+                    <th>Author</th>
+                </tr>
+            </thead>
+            <tbody id="uploadTable"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- RECENT SEARCHES -->
+<div class="card mt-4">
+    <div class="card-header bg-white border-0">
+        <h5 class="fw-semibold">Recent Searches</h5>
+    </div>
+    <div class="card-body">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Report</th>
+                    <th>Type</th>
+                    <th>Division</th>
+                    <th>Date</th>
+                    <th>User</th>
+                </tr>
+            </thead>
+            <tbody id="searchTable"></tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+// ================= STATS =================
+fetch('/api/stats')
+.then(res => res.json())
+.then(data => {
+    document.getElementById('totalReports').innerText = data.total_reports || 0;
+})
+.catch(() => {
+    document.getElementById('totalReports').innerText = 0;
+});
+
+// temp values
+document.getElementById("totalSearches").innerText = 12;
+document.getElementById("totalUsers").innerText = 1;
+
+
+// ================= GRAPH =================
+let chartInstance = null;
+
+function loadChart(type = 'month') {
+
+    fetch(`/api/upload-trend?type=${type}`)
+    .then(res => res.json())
+    .then(data => {
+
+        const ctx = document.getElementById('uploadChart').getContext('2d');
+
+        if (chartInstance) {
+            chartInstance.destroy();
+        }
+
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.labels || [],
+                datasets: [{
+                    label: type === 'day' ? 'Daily Uploads' : 'Monthly Uploads',
+                    data: data.values || [],
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    backgroundColor: "rgba(91,141,239,0.15)",
+                    borderColor: "#3a5bdc",
+                    pointRadius: 4,
+                    pointHoverRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: true }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { precision: 0 }
+                    }
+                }
+            }
+        });
+
+    });
+}
+
+// default load
+loadChart('month');
+
+
+// ================= RECENT UPLOADS =================
+fetch('/api/recent-uploads')
+.then(res => res.json())
+.then(data => {
+
+    let table = document.getElementById('uploadTable');
+    table.innerHTML = '';
+
+    if (!data || data.length === 0) {
+        table.innerHTML = `<tr><td colspan="6" class="text-center">No uploads found</td></tr>`;
+        return;
+    }
+
+    data.forEach(r => {
+        table.innerHTML += `
+        <tr>
+            <td>${r.document_id || '-'}</td>
+            <td>${r.report_name || '-'}</td>
+            <td>${r.report_type || '-'}</td>
+            <td>${r.division || '-'}</td>
+            <td>${r.report_date || '-'}</td>
+            <td>${r.prepared_by || '-'}</td>
+        </tr>`;
+    });
+
+})
+.catch(() => {
+    document.getElementById('uploadTable').innerHTML =
+        `<tr><td colspan="6" class="text-center text-danger">Failed to load data</td></tr>`;
+});
+
+
+// ================= RECENT SEARCHES =================
+fetch('/api/recent-searches')
+.then(res => res.json())
+.then(data => {
+
+    let table = document.getElementById('searchTable');
+    table.innerHTML = '';
+
+    if (!data || data.length === 0) {
+        table.innerHTML = `<tr><td colspan="6" class="text-center">No searches found</td></tr>`;
+        return;
+    }
+
+    data.forEach(item => {
+        table.innerHTML += `
+        <tr>
+            <td>${item.document_id || '-'}</td>
+            <td>${item.report_name || '-'}</td>
+            <td>${item.report_type || '-'}</td>
+            <td>${item.division || '-'}</td>
+            <td>${item.date || '-'}</td>
+            <td>${item.user || '-'}</td>
+        </tr>`;
+    });
+
+})
+.catch(() => {
+    document.getElementById('searchTable').innerHTML =
+        `<tr><td colspan="6" class="text-center text-danger">Failed to load data</td></tr>`;
+});
+
+</script>
+
+{% endblock %}

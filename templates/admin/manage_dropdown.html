@@ -1,0 +1,245 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+
+<div class="py-4">
+    <h2 class="h4">Manage {{ field | capitalize }}</h2>
+</div>
+
+<!-- ADD -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow p-4">
+            <h5>Add New {{ field }}</h5>
+            <input id="value" class="form-control mb-3" placeholder="Enter value">
+            <button class="btn btn-primary" onclick="add()">Create</button>
+        </div>
+    </div>
+</div>
+
+<!-- FILTER -->
+<div class="card shadow mt-4 p-3">
+    <div class="row">
+        <div class="col-md-6">
+            <input id="searchBox" class="form-control" placeholder="Search...">
+        </div>
+        <div class="col-md-2">
+            <select id="rowsPerPage" class="form-control">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="20">20</option>
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- TABLE -->
+<div class="card shadow mt-3">
+    <div class="card-header">
+        <h5>Existing {{ field }}</h5>
+    </div>
+
+    <div class="card-body">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Created At</th>
+                    <th>Name</th>
+                    <th># of Docs</th>
+                    <th>Created By</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="list"></tbody>
+        </table>
+
+        <div id="pagination" class="mt-3"></div>
+    </div>
+</div>
+
+<script>
+
+const field = "{{ field }}";
+
+let allData = [];
+let filteredData = [];
+let currentPage = 1;
+
+function load(){
+    fetch('/api/dropdowns')
+    .then(res => res.json())
+    .then(data => {
+        allData = data[field] || [];
+        filteredData = allData;
+        renderTable();
+    });
+}
+
+function renderTable(){
+
+    let list = document.getElementById("list");
+    list.innerHTML = "";
+
+    let rows = parseInt(document.getElementById("rowsPerPage").value);
+    let start = (currentPage - 1) * rows;
+    let end = start + rows;
+
+    let pageData = filteredData.slice(start, end);
+
+    pageData.forEach((item, i) => {
+
+        
+
+        let name = item.name || item.value || "-";   
+        let time = item.uploaded_at || "-";
+        let createdBy = item.created_by || "-";
+
+        list.innerHTML += `
+        <tr>
+            <td>${start + i + 1}</td>
+
+            <td>${time}</td>
+
+            <td>
+                <span id="text-${i}">${name}</span>
+                <input id="input-${i}" value="${name}" class="form-control d-none">
+            </td>
+
+            <td id="count-${i}">-</td>
+
+            <td>${createdBy}</td>
+
+            <td>
+                
+
+                <button class="btn btn-sm btn-warning me-2"
+                    onclick="edit(${i})">
+                    Edit
+                </button>
+
+                <button class="btn btn-sm btn-success d-none"
+                    id="save-${i}"
+                    onclick="save(${i}, '${name}')">
+                    Save
+                </button>
+
+                <button class="btn btn-sm btn-danger"
+                    onclick="removeValue('${name}')">
+                    Delete
+                </button>
+            </td>
+        </tr>
+        `;
+
+        // ✅ COUNT (NO OF DOCS)
+        fetch(`/api/count/${field}/${name}`)
+        .then(res => res.json())
+        .then(c => {
+            document.getElementById(`count-${i}`).innerText = c.count;
+        });
+
+    });
+
+    renderPagination();
+}
+
+function renderPagination(){
+
+    let totalPages = Math.ceil(filteredData.length / document.getElementById("rowsPerPage").value);
+    let div = document.getElementById("pagination");
+
+    div.innerHTML = "";
+
+    for(let i=1;i<=totalPages;i++){
+        div.innerHTML += `
+            <button class="btn btn-sm ${i==currentPage?'btn-primary':'btn-light'}"
+                onclick="goPage(${i})">${i}</button>
+        `;
+    }
+}
+
+function goPage(p){
+    currentPage = p;
+    renderTable();
+}
+
+// SEARCH
+document.getElementById("searchBox").addEventListener("input", function(){
+    let val = this.value.toLowerCase();
+    filteredData = allData.filter(v => v.name.toLowerCase().includes(val));
+    currentPage = 1;
+    renderTable();
+});
+
+// ROW CHANGE
+document.getElementById("rowsPerPage").addEventListener("change", function(){
+    currentPage = 1;
+    renderTable();
+});
+
+// DETAILS
+function viewDetails(value){
+    window.location.href = `/dropdown-details/${field}/${value}`;
+}
+
+// ADD
+async function add(){
+    let value = document.getElementById("value").value;
+    if(!value) return;
+
+    await fetch(`/api/add-dropdown/${field}`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({value})
+    });
+
+    document.getElementById("value").value = "";
+    load();
+}
+
+// DELETE
+async function removeValue(value){
+    if(!confirm("Delete this value?")) return;
+
+    await fetch(`/api/delete-dropdown/${field}`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({value})
+    });
+
+    load();
+}
+
+// EDIT
+function edit(i){
+    document.getElementById(`text-${i}`).classList.add("d-none");
+    document.getElementById(`input-${i}`).classList.remove("d-none");
+    document.getElementById(`save-${i}`).classList.remove("d-none");
+}
+
+// SAVE
+async function save(i, oldValue){
+
+    let newValue = document.getElementById(`input-${i}`).value;
+
+    await fetch(`/api/delete-dropdown/${field}`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({value: oldValue})
+    });
+
+    await fetch(`/api/add-dropdown/${field}`, {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({value: newValue})
+    });
+
+    load();
+}
+
+load();
+
+</script>
+
+{% endblock %}

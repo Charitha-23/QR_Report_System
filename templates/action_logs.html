@@ -1,0 +1,102 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+
+<div class="card border-0 shadow">
+    <div class="card-header">
+        <h5>Action Logs</h5>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table align-items-center table-flush">
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Action</th>
+                    <th>Document</th>
+                    <th>Time</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+
+            <tbody id="logsTable"></tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+let currentPage = 1;
+const limit = 10;
+
+function loadLogs(page = 1) {
+    fetch(`/api/action-logs?page=${page}&limit=${limit}`)
+      .then(res => res.json())
+      .then(data => {
+
+        let table = document.getElementById("logsTable");
+        table.innerHTML = "";
+
+        if (!data.logs.length) {
+            table.innerHTML = "<tr><td colspan='5'>No logs found</td></tr>";
+            return;
+        }
+
+        data.logs.forEach(log => {
+
+            let time = log.timestamp
+                ? new Date(log.timestamp).toLocaleString()
+                : "-";
+
+            table.innerHTML += `
+            <tr>
+                <td>${log.username || "-"}</td>
+
+                <td>
+                    <span class="badge bg-${getBadge(log.action_type)}">
+                        ${log.action_type || "-"}
+                    </span>
+                </td>
+
+                <td>${log.document_name || log.description || "-"}</td>
+
+                <td>${time}</td>
+
+                <td>
+                    <a href="/log-details?id=${log._id}" class="btn btn-sm btn-gray-800">
+                        →
+                    </a>
+                </td>
+            </tr>
+            `;
+        });
+
+        renderPagination(data.page, data.pages);
+    });
+}
+
+function renderPagination(current, total) {
+    let container = document.getElementById("pagination");
+    container.innerHTML = "";
+
+    for (let i = 1; i <= total; i++) {
+        container.innerHTML += `
+            <button class="btn btn-sm ${i === current ? 'btn-primary' : 'btn-light'}"
+                onclick="loadLogs(${i})">
+                ${i}
+            </button>
+        `;
+    }
+}
+
+function getBadge(type){
+    if(type === "UPLOAD") return "success";
+    if(type === "EDIT") return "warning";
+    if(type === "DELETE") return "danger";
+    if(type === "LOGIN") return "info";
+    return "secondary";
+}
+
+loadLogs();
+</script>
+
+{% endblock %}

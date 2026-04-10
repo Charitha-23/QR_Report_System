@@ -1,0 +1,464 @@
+{% extends "layouts/base.html" %}
+
+{% block content %}
+
+<div class="container mt-4">
+    <h2>Search Reports</h2>
+
+    <input type="text" id="searchBox" class="form-control mb-3" placeholder="Search">
+
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <select id="typeFilter" class="form-control">
+                <option value="">All Types</option>
+            </select>
+        </div>
+
+        <div class="col-md-4">
+            <select id="divisionFilter" class="form-control">
+                <option value="">All Divisions</option>
+            </select>
+        </div>
+    </div>
+
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Division</th>
+                <th>Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="results"></tbody>
+    </table>
+
+    <div id="pagination" class="mt-3"></div>
+</div>
+
+<!-- SUMMARY MODAL -->
+<div id="summaryModal" style="
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 20px;
+    width: 500px;
+    max-width: 90%;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.3);
+    display: none;
+    z-index: 9999;
+">
+    <h5>AI Summary</h5>
+    <div id="summaryText" style="max-height: 300px; overflow-y: auto;"></div>
+
+    <div class="mt-3 text-end">
+        <button class="btn btn-secondary me-2" onclick="closeModal()">Close</button>
+    </div>
+</div>
+
+<style>
+.highlight {
+    background-color: yellow;
+    padding: 2px;
+    border-radius: 3px;
+}
+
+.dropdown-menu-custom {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 35px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    z-index: 1000;
+    min-width: 120px;
+}
+
+.dropdown-menu-custom button,
+.dropdown-menu-custom a {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    background: none;
+    text-align: left;
+    text-decoration: none;
+    color: #333;
+    cursor: pointer;
+}
+
+.dropdown-menu-custom button:hover,
+.dropdown-menu-custom a:hover {
+    background: #f5f5f5;
+}
+
+/* ✅ ONLY ADDED THIS */
+.view-btn {
+    padding: 10px 20px;
+    font-size: 14px;
+    border-radius: 8px;
+    font-weight: 500;
+}
+</style>
+
+<script>
+
+window.userRole = "{{ role }}";
+
+let allReports = [];
+let filteredReports = [];
+let currentPage = 1;
+const rowsPerPage = 10;
+
+
+// Load data
+fetch('/api/all-reports')
+.then(res => res.json())
+.then(data => {
+    allReports = data.reverse();
+    filteredReports = allReports;
+    renderTable();
+    loadFilters(data);
+    renderPagination();
+});
+
+
+// Highlight
+function highlight(text, keyword){
+    if(!keyword) return text;
+    let regex = new RegExp(`(${keyword})`, "gi");
+    return text.replace(regex, `<span class="highlight">$1</span>`);
+}
+
+
+// Render Table
+function renderTable(){
+
+    let keyword = document.getElementById("searchBox").value.toLowerCase();
+    let table = document.getElementById("results");
+    table.innerHTML = "";
+
+    let start = (currentPage - 1) * rowsPerPage;
+    let end = start + rowsPerPage;
+    let pageData = filteredReports.slice(start, end);
+
+    if(pageData.length === 0){
+        table.innerHTML = "<tr><td colspan='6'>No results found</td></tr>";
+        return;
+    }
+
+    pageData.forEach(r => {
+
+        let fileUrl = (r.files && r.files.length > 0)
+            ? `/${r.files[0].path}`
+            : "#";
+
+        table.innerHTML += `
+        <tr id="row-${r.document_id}">
+            <td>${r.document_id}</td>
+            <td>${highlight(r.report_name || '', keyword)}</td>
+            <td>${highlight(r.report_type || '', keyword)}</td>
+            <td>${highlight(r.division || '-', keyword)}</td>
+            <td>${r.report_date}</td>
+
+            <td style="position: relative;">
+
+                <!-- ✅ FIXED + BIGGER BUTTON -->
+           <button class="view-btn me-2"
+                onclick="showSummary(this)"
+                data-files='${encodeURIComponent(JSON.stringify(r.files || []))}'>
+                View
+            </button>
+
+                <button class="btn btn-sm btn-outline-secondary"
+                    onclick="toggleMenu('${r.document_id}')">
+                    ⋮
+                </button>
+
+                <div id="menu-${r.document_id}" class="dropdown-menu-custom">
+
+                    ${window.userRole === "admin" ? `
+                        <button onclick="editReport('${r.document_id}')">Edit</button>
+                        <button onclick="deleteReport('${r.document_id}')">Delete</button>
+                    ` : ""}
+
+                    
+                </div>
+
+            </td>
+        </tr>
+        `;
+    });
+}
+
+
+// Pagination
+function renderPagination(){
+
+    let totalPages = Math.ceil(filteredReports.length / rowsPerPage);
+    let container = document.getElementById("pagination");
+
+    container.innerHTML = "";
+
+    container.innerHTML += `<button onclick="prevPage()" class="btn btn-sm btn-secondary me-2">Prev</button>`;
+
+    for(let i = 1; i <= totalPages; i++){
+        container.innerHTML += `
+            <button onclick="goToPage(${i})"
+                class="btn btn-sm ${i === currentPage ? 'btn-primary' : 'btn-outline-primary'} me-1">
+                ${i}
+            </button>
+        `;
+    }
+
+    container.innerHTML += `<button onclick="nextPage()" class="btn btn-sm btn-secondary ms-2">Next</button>`;
+}
+
+
+// Navigation
+function goToPage(page){
+    currentPage = page;
+    renderTable();
+}
+
+function nextPage(){
+    let totalPages = Math.ceil(filteredReports.length / rowsPerPage);
+    if(currentPage < totalPages){
+        currentPage++;
+        renderTable();
+    }
+}
+
+function prevPage(){
+    if(currentPage > 1){
+        currentPage--;
+        renderTable();
+    }
+}
+
+
+// Dropdown toggle
+function toggleMenu(id){
+
+    document.querySelectorAll('.dropdown-menu-custom')
+        .forEach(m => m.style.display = 'none');
+
+    let menu = document.getElementById(`menu-${id}`);
+
+    menu.style.display = (menu.style.display === "block") ? "none" : "block";
+}
+
+
+// Close dropdown outside click
+document.addEventListener("click", function(e){
+    if(!e.target.closest('.dropdown-menu-custom') && !e.target.closest('button')){
+        document.querySelectorAll('.dropdown-menu-custom')
+            .forEach(m => m.style.display = 'none');
+    }
+});
+
+
+// Summary modal
+function showSummary(btn){
+
+    let encoded = btn.getAttribute("data-files");
+    let files = [];
+
+    try{
+        files = JSON.parse(decodeURIComponent(encoded));
+    } catch(e){
+        console.error("Error parsing files:", e);
+        files = [];
+    }
+
+    let content = "";
+
+    if(files.length > 0){
+
+        files.forEach((f, index) => {
+
+            let fileName = f.path.split('/').pop();
+
+            content += `
+                <div style="margin-bottom:15px; padding:10px; border:1px solid #ddd; border-radius:8px;">
+                    
+                    <b>File ${index + 1}:</b> ${fileName}
+
+                    <div style="margin-top:8px;">
+                        <a href="/${f.path}" target="_blank" class="btn btn-sm btn-primary me-2">
+                            View
+                        </a>
+
+                        <a href="/${f.path}" download class="btn btn-sm btn-success">
+                            Download
+                        </a>
+                    </div>
+
+                    <hr>
+
+                    <b>Summary:</b>
+                    <p>${f.summary ? f.summary : "No summary available"}</p>
+
+                </div>
+            `;
+        });
+
+    } else {
+        content = "<p>No files available</p>";
+    }
+
+    document.getElementById("summaryText").innerHTML = content;
+    document.getElementById("summaryModal").style.display = "block";
+}
+
+function closeModal(){
+    document.getElementById("summaryModal").style.display = "none";
+}
+
+
+// Delete
+async function deleteReport(id){
+
+    if(!confirm("Delete this report?")) return;
+
+    try{
+        let res = await fetch(`/api/delete-report/${id}`, { method: 'DELETE' });
+
+        if(res.ok){
+            filteredReports = filteredReports.filter(r => r.document_id !== id);
+            renderTable();
+            renderPagination();
+        }
+
+    } catch(err){
+        alert("Delete failed");
+    }
+}
+
+
+// Edit
+function editReport(id){
+    window.location.href = `/edit/${id}`;
+}
+
+
+// SEARCH LOGGING
+document.getElementById("searchBox").addEventListener("input", function(){
+
+    let keyword = this.value.toLowerCase();
+
+    filterData();
+
+    if(keyword.trim() !== ""){
+
+        let first = filteredReports[0];
+
+        fetch('/api/log-search', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                document_id: first ? first.document_id : null,
+                report_name: keyword,
+                user: "Admin"
+            })
+        });
+
+    }
+
+});
+
+document.getElementById("typeFilter").addEventListener("change", filterData);
+document.getElementById("divisionFilter").addEventListener("change", filterData);
+
+const STOP_WORDS = ["show", "me", "on", "in", "the", "about", "for", "all"];
+
+const SYNONYMS = {
+    "failure": ["failure", "fault", "breakdown", "error"],
+    "machine": ["machine", "equipment", "device"]
+};
+
+function extractKeywords(query){
+    return query.toLowerCase().split(" ")
+        .filter(word => !STOP_WORDS.includes(word));
+}
+
+function expandKeywords(keywords){
+    let expanded = [];
+
+    keywords.forEach(word => {
+        expanded.push(word);
+
+        if(SYNONYMS[word]){
+            expanded.push(...SYNONYMS[word]);
+        }
+    });
+
+    return expanded;
+}
+
+
+function filterData(){
+
+    let query = document.getElementById("searchBox").value;
+
+    let keywords = extractKeywords(query);
+    keywords = expandKeywords(keywords);
+
+    let type = document.getElementById("typeFilter").value;
+    let division = document.getElementById("divisionFilter").value;
+
+    filteredReports = allReports.filter(r => {
+
+        let text = (
+            (r.report_name || "") + " " +
+            (r.report_type || "") + " " +
+            (r.division || "") + " " +
+            (r.ai_summary || "")
+        ).toLowerCase();
+
+        let matchKeyword = keywords.some(k => text.includes(k));
+
+        let matchType = type ? r.report_type === type : true;
+        let matchDivision = division ? r.division === division : true;
+
+        return matchKeyword && matchType && matchDivision;
+    });
+
+    currentPage = 1;
+    renderTable();
+    renderPagination();
+}
+
+// Load Filters
+function loadFilters(data){
+
+    let types = new Set();
+    let divisions = new Set();
+
+    data.forEach(r => {
+        if(r.report_type) types.add(r.report_type);
+        if(r.division) divisions.add(r.division);
+    });
+
+    let typeEl = document.getElementById("typeFilter");
+    let divEl = document.getElementById("divisionFilter");
+
+    types.forEach(v => {
+        typeEl.innerHTML += `<option value="${v}">${v}</option>`;
+    });
+
+    divisions.forEach(v => {
+        divEl.innerHTML += `<option value="${v}">${v}</option>`;
+    });
+}
+
+</script>
+
+{% endblock %}

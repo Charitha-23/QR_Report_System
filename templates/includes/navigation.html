@@ -1,0 +1,43 @@
+<nav class="navbar navbar-top navbar-expand navbar-dashboard navbar-dark ps-0 pe-2 pb-0">
+  <div class="container-fluid px-0">
+    <div class="d-flex justify-content-between w-100" id="navbarSupportedContent">
+
+      <!-- 🔥 LEFT SIDE (EMPTY / CLEAN) -->
+      <div></div>
+
+      <!-- 🔥 RIGHT SIDE -->
+      <ul class="navbar-nav align-items-center">
+
+        <!-- USER DROPDOWN -->
+        <li class="nav-item dropdown ms-lg-3">
+          <a class="nav-link dropdown-toggle pt-1 px-0" href="#" role="button" data-bs-toggle="dropdown">
+            <div class="media d-flex align-items-center">
+              <img class="avatar rounded-circle" alt="User" src="/static/assets/img/team/profile-picture-3.jpg">
+              <div class="media-body ms-2 text-dark d-none d-lg-block">
+                <span class="mb-0 font-small fw-bold text-gray-900">
+                  {{ current_user.username if current_user else "User" }}
+                </span>
+              </div>
+            </div>
+          </a>
+
+          <!-- DROPDOWN MENU -->
+          <div class="dropdown-menu dropdown-menu-end mt-2 py-1">
+
+            <a class="dropdown-item d-flex align-items-center" href="/profile">
+              👤 My Profile
+            </a>
+
+            <div role="separator" class="dropdown-divider my-1"></div>
+
+            <a class="dropdown-item d-flex align-items-center text-danger" href="/logout">
+              🚪 Logout
+            </a>
+
+          </div>
+        </li>
+
+      </ul>
+    </div>
+  </div>
+</nav>

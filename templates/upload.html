@@ -1,0 +1,176 @@
+{% extends "layouts/base.html" %}
+{% block content %}
+
+<div class="container mt-4">
+    <h2>Upload Report</h2>
+
+    <form id="uploadForm" method="POST" enctype="multipart/form-data">
+
+        <div class="row">
+
+            <div class="col-md-6 mb-3">
+                <label>Report Name *</label>
+                <input type="text" name="report_name" class="form-control" required>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label>Report Type *</label>
+                <input list="reportTypes" name="report_type" class="form-control" required>
+                <datalist id="reportTypes"></datalist>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label>Division *</label>
+                <input list="divisions" name="division" class="form-control" required>
+                <datalist id="divisions"></datalist>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label>Document ID *</label>
+                <input type="text" name="document_id" class="form-control" required>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label>Machine / Equipment</label>
+                <input list="equipmentList" name="equipment" class="form-control">
+                <datalist id="equipmentList"></datalist>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label>Prepared By *</label>
+                <input type="text" name="prepared_by" class="form-control" required>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label>Report Date *</label>
+                <input type="date" name="report_date" class="form-control" required>
+            </div>
+
+            <div class="col-md-12 mb-3">
+                <label>Summary</label>
+                <textarea name="summary" class="form-control"></textarea>
+            </div>
+
+            <!-- FILE INPUT -->
+            <div class="col-md-12 mb-3">
+                <label>Upload Files *</label>
+                <input type="file" id="files" class="form-control" multiple>
+                <small id="fileCountText" class="text-muted">No files selected</small>
+            </div>
+
+            <ul id="fileList"></ul>
+
+        </div>
+
+        <button class="btn btn-primary">Upload</button>
+
+    </form>
+</div>
+
+<script>
+
+// -------------------- DROPDOWNS --------------------
+fetch('/api/dropdowns')
+.then(res => res.json())
+.then(data => {
+
+    let typeEl = document.getElementById('reportTypes');
+    let divisionEl = document.getElementById('divisions');
+    let equipEl = document.getElementById('equipmentList');
+
+    typeEl.innerHTML = '';
+    divisionEl.innerHTML = '';
+    equipEl.innerHTML = '';
+
+    (data.report_type || []).forEach(v => {
+    typeEl.innerHTML += `<option value="${v.name}">`;
+    });
+
+    (data.division || []).forEach(v => {
+        divisionEl.innerHTML += `<option value="${v.name}">`;
+    });
+
+    (data.equipment || []).forEach(v => {
+        equipEl.innerHTML += `<option value="${v.name}">`;
+    });
+
+});
+
+// -------------------- FILE HANDLING --------------------
+let selectedFiles = [];
+
+document.getElementById("files").addEventListener("change", function(e) {
+    let newFiles = Array.from(e.target.files);
+
+    selectedFiles = selectedFiles.concat(newFiles);
+
+    updateFileList();
+
+    e.target.value = "";
+});
+
+function updateFileList() {
+    let list = document.getElementById("fileList");
+    let fileCountText = document.getElementById("fileCountText");
+
+    list.innerHTML = "";
+
+    selectedFiles.forEach((file, index) => {
+        let li = document.createElement("li");
+        li.innerHTML = `
+            ${file.name}
+            <button type="button" onclick="removeFile(${index})">Remove</button>
+        `;
+        list.appendChild(li);
+    });
+
+    // Update file count text
+    if (selectedFiles.length === 0) {
+        fileCountText.innerText = "No files selected";
+    } else if (selectedFiles.length === 1) {
+        fileCountText.innerText = "1 file selected";
+    } else {
+        fileCountText.innerText = selectedFiles.length + " files selected";
+    }
+}
+
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    updateFileList();
+}
+
+// -------------------- SUBMIT --------------------
+document.getElementById("uploadForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    // Manual validation for files
+    if (selectedFiles.length === 0) {
+        alert("Please select at least one file");
+        return;
+    }
+
+    let formData = new FormData(this);
+
+    // Append files manually
+    selectedFiles.forEach(file => {
+        formData.append("files", file);
+    });
+
+    let res = await fetch("/api/upload-report", {
+        method: "POST",
+        body: formData
+    });
+
+    let data = await res.json();
+
+    if (res.ok) {
+        alert("Uploaded successfully");
+        location.reload();
+    } else {
+        alert(data.error);
+    }
+});
+
+</script>
+
+{% endblock %}

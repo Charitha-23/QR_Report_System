@@ -1,0 +1,150 @@
+<nav class="navbar navbar-dark navbar-theme-primary px-4 col-12 d-lg-none">
+    <a class="navbar-brand me-lg-5" href="/">
+        <img class="navbar-brand-dark" src="/static/assets/img/brand/light.svg">
+    </a>
+    <div class="d-flex align-items-center">
+        <button class="navbar-toggler d-lg-none collapsed" type="button"
+            data-bs-toggle="collapse" data-bs-target="#sidebarMenu">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+    </div>
+</nav>
+
+<nav id="sidebarMenu" class="sidebar d-lg-block bg-gray-800 text-white collapse" data-simplebar>
+    <div class="sidebar-inner px-4 pt-3">
+
+        <!-- Mobile User -->
+        <div class="user-card d-flex d-md-none align-items-center justify-content-between pb-4">
+            <div class="d-flex align-items-center">
+                <div class="avatar-lg me-4">
+                    <img src="/static/assets/img/team/profile-picture-3.jpg"
+                         class="rounded-circle border-white">
+                </div>
+                <div class="d-block">
+                    <h2 class="h5 mb-3">User</h2>
+                    <a href="/logout" class="btn btn-secondary btn-sm">Sign Out</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- SIDEBAR MENU -->
+        <ul class="nav flex-column pt-3 pt-md-0">
+
+            <!-- Logo -->
+            <li class="nav-item">
+                <a href="/" class="nav-link d-flex align-items-center">
+                    <span class="sidebar-icon">
+                        <img src="/static/assets/img/brand/light.svg" height="20">
+                    </span>
+                    <span class="sidebar-text ms-2">QR Report System</span>
+                </a>
+            </li>
+
+            <!-- Dashboard -->
+            <li class="nav-item">
+                <a href="/" class="nav-link">
+                    <span class="sidebar-icon">
+                        <i class="bi bi-speedometer2"></i>
+                    </span>
+                    <span class="sidebar-text">Dashboard</span>
+                </a>
+            </li>
+
+            <!-- Upload -->
+            <li class="nav-item">
+                <a href="/upload" class="nav-link">
+                    <span class="sidebar-icon">
+                        <i class="bi bi-upload"></i>
+                    </span>
+                    <span class="sidebar-text">Upload Report</span>
+                </a>
+            </li>
+
+            <!-- Search -->
+            <li class="nav-item">
+                <a href="/search" class="nav-link">
+                    <span class="sidebar-icon">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <span class="sidebar-text">Search Reports</span>
+                </a>
+            </li>
+
+            <!-- Action Logs -->
+            <li class="nav-item">
+                <a href="/action-logs" class="nav-link">
+                    <span class="sidebar-icon">
+                        <i class="bi bi-clock-history"></i>
+                    </span>
+                    <span class="sidebar-text">Action Logs</span>
+                </a>
+            </li>
+
+            <!-- ADMIN SETTINGS -->
+            {% if session.get("role") == "admin" %}
+            
+            <li role="separator" class="dropdown-divider mt-4 mb-3 border-gray-700"></li>
+
+            <li class="nav-item">
+                <span class="nav-link text-muted">Settings</span>
+            </li>
+
+            <!-- Report Types -->
+            <li class="nav-item">
+                <a href="/admin/report-types" class="nav-link">
+                    <span class="sidebar-icon">
+                        <i class="bi bi-list-ul"></i>
+                    </span>
+                    <span class="sidebar-text">Report Types</span>
+                </a>
+            </li>
+
+            <!-- Divisions -->
+            <li class="nav-item">
+                <a href="/admin/divisions" class="nav-link">
+                    <span class="sidebar-icon">
+                        <i class="bi bi-diagram-3"></i>
+                    </span>
+                    <span class="sidebar-text">Divisions</span>
+                </a>
+            </li>
+
+            <!-- Equipment -->
+            <li class="nav-item">
+                <a href="/admin/equipment" class="nav-link">
+                    <span class="sidebar-icon">
+                        <i class="bi bi-cpu"></i>
+                    </span>
+                    <span class="sidebar-text">Equipment</span>
+                </a>
+            </li>
+
+            <!--  Role Management (NEW) -->
+            <li class="nav-item">
+                <a href="/admin/roles" class="nav-link">
+                    <span class="sidebar-icon">
+                        <i class="bi bi-shield-lock"></i>
+                    </span>
+                    <span class="sidebar-text">Role Management</span>
+                </a>
+            </li>
+
+            {% endif %}
+
+            <!-- Divider -->
+            <li role="separator" class="dropdown-divider mt-4 mb-3 border-gray-700"></li>
+
+            <!-- Logout -->
+            <li class="nav-item">
+                <a href="/logout" class="nav-link">
+                    <span class="sidebar-icon">
+                        <i class="bi bi-box-arrow-right"></i>
+                    </span>
+                    <span class="sidebar-text">Logout</span>
+                </a>
+            </li>
+
+        </ul>
+
+    </div>
+</nav>
