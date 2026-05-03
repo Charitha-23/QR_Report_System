@@ -10,7 +10,6 @@ body {
     font-family: 'Segoe UI', sans-serif;
 }
 
-/* Cards */
 .card {
     border: none;
     border-radius: 18px;
@@ -23,13 +22,11 @@ body {
     box-shadow: 0 12px 30px rgba(0,0,0,0.08);
 }
 
-/* Gradient */
 .stat-card {
     background: linear-gradient(135deg, #5b8def, #3a5bdc);
     color: white;
 }
 
-/* Tables */
 .table thead {
     background: #eef2ff;
     font-weight: 600;
@@ -42,7 +39,6 @@ body {
 
 <!-- HEADER -->
 <div class="py-3 d-flex justify-content-between align-items-center">
-    <!-- ✅ Dynamic username -->
     <h2 class="fw-bold">Welcome, {{ username }}</h2>
 </div>
 
@@ -79,7 +75,7 @@ body {
 
 </div>
 
-<!-- GRAPH WITH TOGGLE -->
+<!-- GRAPH -->
 <div class="card p-4 mt-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h5 class="fw-semibold">Uploads Trend</h5>
@@ -90,8 +86,9 @@ body {
         </div>
     </div>
 
-    <div style="height:300px;">
-        <canvas id="uploadChart"></canvas>
+    <!-- ✅ FIXED FULL WIDTH -->
+    <div style="height:350px; width:100%;">
+        <canvas id="uploadChart" style="width:100% !important; height:100% !important;"></canvas>
     </div>
 </div>
 
@@ -153,7 +150,6 @@ fetch('/api/stats')
     document.getElementById('totalReports').innerText = 0;
 });
 
-// temp values
 document.getElementById("totalSearches").innerText = 12;
 document.getElementById("totalUsers").innerText = 1;
 
@@ -191,6 +187,7 @@ function loadChart(type = 'month') {
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false, // ✅ FIX
                 plugins: {
                     legend: { display: true }
                 },
@@ -206,7 +203,6 @@ function loadChart(type = 'month') {
     });
 }
 
-// default load
 loadChart('month');
 
 
@@ -227,7 +223,11 @@ fetch('/api/recent-uploads')
         table.innerHTML += `
         <tr>
             <td>${r.document_id || '-'}</td>
-            <td>${r.report_name || '-'}</td>
+            <td>
+                <a href="/report/${r.document_id}" class="text-primary fw-semibold text-decoration-none">
+                    ${r.report_name || '-'}
+                </a>
+            </td>
             <td>${r.report_type || '-'}</td>
             <td>${r.division || '-'}</td>
             <td>${r.report_date || '-'}</td>
@@ -259,7 +259,11 @@ fetch('/api/recent-searches')
         table.innerHTML += `
         <tr>
             <td>${item.document_id || '-'}</td>
-            <td>${item.report_name || '-'}</td>
+            <td>
+                <a href="/report/${item.document_id}" class="text-primary fw-semibold text-decoration-none">
+                    ${item.report_name || '-'}
+                </a>
+            </td>
             <td>${item.report_type || '-'}</td>
             <td>${item.division || '-'}</td>
             <td>${item.date || '-'}</td>

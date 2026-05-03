@@ -1,23 +1,59 @@
 {% extends "layouts/base.html" %}
 
+{% block title %} Edit {% endblock %}
+
 {% block content %}
 
 <div class="container mt-4">
-    <h2>Edit Report</h2>
+    <h2 class="mb-4">Edit Report</h2>
 
     <form id="editForm">
 
         <input type="hidden" id="docId">
 
-        <input type="text" id="report_name" class="form-control mb-2" placeholder="Report Name">
-        <input type="text" id="report_type" class="form-control mb-2" placeholder="Type">
-        <input type="text" id="division" class="form-control mb-2" placeholder="Division">
-        <input type="text" id="equipment" class="form-control mb-2" placeholder="Equipment">
-        <input type="text" id="prepared_by" class="form-control mb-2" placeholder="Prepared By">
-        <input type="date" id="report_date" class="form-control mb-2">
-        <textarea id="summary" class="form-control mb-2" placeholder="Summary"></textarea>
+        <div class="row">
 
-        <button class="btn btn-success">Update</button>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Report Name *</label>
+                <input type="text" id="report_name" class="form-control">
+            </div>
+
+            <!--  DROPDOWN -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Report Type *</label>
+                <select id="report_type" class="form-select"></select>
+            </div>
+
+            <!--  DROPDOWN -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Division *</label>
+                <select id="division" class="form-select"></select>
+            </div>
+
+            <!--  DROPDOWN -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Machine / Equipment</label>
+                <select id="equipment" class="form-select"></select>
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Prepared By *</label>
+                <input type="text" id="prepared_by" class="form-control">
+            </div>
+
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Report Date *</label>
+                <input type="date" id="report_date" class="form-control">
+            </div>
+
+            <div class="col-12 mb-3">
+                <label class="form-label">Summary</label>
+                <textarea id="summary" class="form-control" rows="3"></textarea>
+            </div>
+
+        </div>
+
+        <button class="btn btn-success px-4">Update Report</button>
 
     </form>
 </div>
@@ -27,26 +63,66 @@
 const docId = "{{ document_id }}";
 document.getElementById('docId').value = docId;
 
-// 🔹 Load data
-fetch('/api/all-reports')
-.then(res => res.json())
-.then(data => {
+// -------------------- LOAD DROPDOWNS --------------------
+function loadDropdowns() {
+    return fetch('/api/dropdowns')
+    .then(res => res.json())
+    .then(data => {
 
-    let report = data.find(r => r.document_id === docId);
+        let typeEl = document.getElementById('report_type');
+        let divisionEl = document.getElementById('division');
+        let equipEl = document.getElementById('equipment');
 
-    if(report){
-        document.getElementById('report_name').value = report.report_name;
-        document.getElementById('report_type').value = report.report_type;
-        document.getElementById('division').value = report.division;
-        document.getElementById('equipment').value = report.equipment;
-        document.getElementById('prepared_by').value = report.prepared_by || '';
-        document.getElementById('report_date').value = report.report_date;
-        document.getElementById('summary').value = report.summary || '';
-    }
+        typeEl.innerHTML = '<option value="">Select Report Type</option>';
+        divisionEl.innerHTML = '<option value="">Select Division</option>';
+        equipEl.innerHTML = '<option value="">Select Equipment</option>';
+
+        (data.report_type || []).forEach(v => {
+            typeEl.innerHTML += `<option value="${v.name}">${v.name}</option>`;
+        });
+
+        (data.division || []).forEach(v => {
+            divisionEl.innerHTML += `<option value="${v.name}">${v.name}</option>`;
+        });
+
+        (data.equipment || []).forEach(v => {
+            equipEl.innerHTML += `<option value="${v.name}">${v.name}</option>`;
+        });
+
+    });
+}
+
+// -------------------- LOAD REPORT DATA --------------------
+function loadReport() {
+    return fetch('/api/all-reports')
+    .then(res => res.json())
+    .then(data => {
+
+        let report = data.find(r => r.document_id === docId);
+
+        if(report){
+
+            document.getElementById('report_name').value = report.report_name || '';
+            document.getElementById('prepared_by').value = report.prepared_by || '';
+            document.getElementById('report_date').value = report.report_date || '';
+            document.getElementById('summary').value = report.summary || '';
+
+            // Set dropdown values AFTER options loaded
+            document.getElementById('report_type').value = report.report_type || '';
+            document.getElementById('division').value = report.division || '';
+            document.getElementById('equipment').value = report.equipment || '';
+        }
+
+    });
+}
+
+// -------------------- LOAD BOTH IN ORDER --------------------
+loadDropdowns().then(() => {
+    loadReport();
 });
 
 
-// 🔹 Update
+// -------------------- UPDATE --------------------
 document.getElementById('editForm').addEventListener('submit', function(e){
     e.preventDefault();
 

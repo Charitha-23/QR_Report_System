@@ -8,7 +8,7 @@
     <div class="col-md-8">
         <div class="card shadow p-4">
 
-            <h4>Details</h4>
+            <h4 class="mb-3">Report Details</h4>
 
             <p><b>Document ID:</b> {{ report.document_id }}</p>
             <p><b>Title:</b> {{ report.report_name }}</p>
@@ -19,13 +19,40 @@
 
             <hr>
 
-            <h5>Files</h5>
+            <h5 class="mb-3">Files</h5>
 
-            {% for file in report.files %}
-                <a href="/{{ file }}" target="_blank">
-                    {{ file.split('/')[-1].split('_',1)[-1] }}
-                </a><br>
-            {% endfor %}
+            {% if report.files and report.files|length > 0 %}
+                <ul class="list-group">
+
+                    {% for file in report.files %}
+
+                        {% if file.path is defined %}
+                            {% set file_path = file.path %}
+                        {% else %}
+                            {% set file_path = file %}
+                        {% endif %}
+
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+
+                            <!-- FILE NAME -->
+                            <a href="/{{ file_path }}" target="_blank"
+                               class="text-primary fw-semibold text-decoration-none">
+                                {{ file_path.split('/')[-1].split('_',1)[-1] }}
+                            </a>
+
+                            <!-- DOWNLOAD BUTTON -->
+                            <a href="/{{ file_path }}" class="btn btn-sm btn-outline-primary" download>
+                                Download
+                            </a>
+
+                        </li>
+
+                    {% endfor %}
+
+                </ul>
+            {% else %}
+                <p class="text-muted">No files available</p>
+            {% endif %}
 
         </div>
     </div>
@@ -34,11 +61,15 @@
     <div class="col-md-4">
 
         <div class="card shadow p-3 mb-3 text-center">
-            <a href="/edit/{{ report.document_id }}" class="btn btn-primary">Edit</a>
+            <a href="/edit/{{ report.document_id }}" class="btn btn-primary w-100">
+                Edit Report
+            </a>
         </div>
 
         <div class="card shadow p-3 mb-3 text-center">
-            <button class="btn btn-danger" onclick="deleteReport()">Delete</button>
+            <button class="btn btn-danger w-100" onclick="deleteReport()">
+                Delete Report
+            </button>
         </div>
 
     </div>

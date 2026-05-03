@@ -1,71 +1,92 @@
 {% extends "layouts/base.html" %}
+
+{% block title %} Upload {% endblock %}
+
 {% block content %}
 
 <div class="container mt-4">
-    <h2>Upload Report</h2>
 
-    <form id="uploadForm" method="POST" enctype="multipart/form-data">
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
 
-        <div class="row">
+            <h3 class="mb-4">Upload Report</h3>
 
-            <div class="col-md-6 mb-3">
-                <label>Report Name *</label>
-                <input type="text" name="report_name" class="form-control" required>
-            </div>
+            <form id="uploadForm" method="POST" enctype="multipart/form-data">
 
-            <div class="col-md-6 mb-3">
-                <label>Report Type *</label>
-                <input list="reportTypes" name="report_type" class="form-control" required>
-                <datalist id="reportTypes"></datalist>
-            </div>
+                <div class="row">
 
-            <div class="col-md-6 mb-3">
-                <label>Division *</label>
-                <input list="divisions" name="division" class="form-control" required>
-                <datalist id="divisions"></datalist>
-            </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Report Name *</label>
+                        <input type="text" name="report_name" class="form-control" required>
+                    </div>
 
-            <div class="col-md-6 mb-3">
-                <label>Document ID *</label>
-                <input type="text" name="document_id" class="form-control" required>
-            </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Report Type *</label>
+                        <select name="report_type" id="reportTypes" class="form-select" required>
+                            <option value="">Select Report Type</option>
+                        </select>
+                    </div>
 
-            <div class="col-md-6 mb-3">
-                <label>Machine / Equipment</label>
-                <input list="equipmentList" name="equipment" class="form-control">
-                <datalist id="equipmentList"></datalist>
-            </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Division *</label>
+                        <select name="division" id="divisions" class="form-select" required>
+                            <option value="">Select Division</option>
+                        </select>
+                    </div>
 
-            <div class="col-md-6 mb-3">
-                <label>Prepared By *</label>
-                <input type="text" name="prepared_by" class="form-control" required>
-            </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Document ID *</label>
+                        <input type="text" name="document_id" class="form-control" required>
+                    </div>
 
-            <div class="col-md-6 mb-3">
-                <label>Report Date *</label>
-                <input type="date" name="report_date" class="form-control" required>
-            </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Machine / Equipment</label>
+                        <select name="equipment" id="equipmentList" class="form-select">
+                            <option value="">Select Equipment</option>
+                        </select>
+                    </div>
 
-            <div class="col-md-12 mb-3">
-                <label>Summary</label>
-                <textarea name="summary" class="form-control"></textarea>
-            </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Prepared By *</label>
+                        <input type="text" name="prepared_by" class="form-control" required>
+                    </div>
 
-            <!-- FILE INPUT -->
-            <div class="col-md-12 mb-3">
-                <label>Upload Files *</label>
-                <input type="file" id="files" class="form-control" multiple>
-                <small id="fileCountText" class="text-muted">No files selected</small>
-            </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Report Date *</label>
+                        <input type="date" name="report_date" class="form-control" required>
+                    </div>
 
-            <ul id="fileList"></ul>
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Summary</label>
+                        <textarea name="summary" class="form-control"></textarea>
+                    </div>
+
+                    <div class="col-md-12 mb-3">
+                        <label class="form-label">Upload Files *</label>
+                        <input type="file" id="files" class="form-control" multiple>
+                        <small id="fileCountText" class="text-muted">No files selected</small>
+                    </div>
+
+                    <ul id="fileList" class="list-group mt-2"></ul>
+
+                </div>
+
+                <button id="uploadBtn" class="btn btn-primary px-4 mt-3">Upload</button>
+
+            </form>
 
         </div>
+    </div>
 
-        <button class="btn btn-primary">Upload</button>
-
-    </form>
 </div>
+
+<!-- TOAST CONTAINER -->
+<div id="toastBox" style="
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+"></div>
 
 <script>
 
@@ -78,34 +99,28 @@ fetch('/api/dropdowns')
     let divisionEl = document.getElementById('divisions');
     let equipEl = document.getElementById('equipmentList');
 
-    typeEl.innerHTML = '';
-    divisionEl.innerHTML = '';
-    equipEl.innerHTML = '';
-
     (data.report_type || []).forEach(v => {
-    typeEl.innerHTML += `<option value="${v.name}">`;
+        typeEl.innerHTML += `<option value="${v.name}">${v.name}</option>`;
     });
 
     (data.division || []).forEach(v => {
-        divisionEl.innerHTML += `<option value="${v.name}">`;
+        divisionEl.innerHTML += `<option value="${v.name}">${v.name}</option>`;
     });
 
     (data.equipment || []).forEach(v => {
-        equipEl.innerHTML += `<option value="${v.name}">`;
+        equipEl.innerHTML += `<option value="${v.name}">${v.name}</option>`;
     });
 
 });
+
 
 // -------------------- FILE HANDLING --------------------
 let selectedFiles = [];
 
 document.getElementById("files").addEventListener("change", function(e) {
     let newFiles = Array.from(e.target.files);
-
     selectedFiles = selectedFiles.concat(newFiles);
-
     updateFileList();
-
     e.target.value = "";
 });
 
@@ -117,20 +132,22 @@ function updateFileList() {
 
     selectedFiles.forEach((file, index) => {
         let li = document.createElement("li");
+        li.className = "list-group-item d-flex justify-content-between align-items-center";
+
         li.innerHTML = `
             ${file.name}
-            <button type="button" onclick="removeFile(${index})">Remove</button>
+            <button type="button" class="btn btn-sm btn-danger" onclick="removeFile(${index})">
+                Remove
+            </button>
         `;
+
         list.appendChild(li);
     });
 
-    // Update file count text
     if (selectedFiles.length === 0) {
         fileCountText.innerText = "No files selected";
-    } else if (selectedFiles.length === 1) {
-        fileCountText.innerText = "1 file selected";
     } else {
-        fileCountText.innerText = selectedFiles.length + " files selected";
+        fileCountText.innerText = selectedFiles.length + " file(s) selected";
     }
 }
 
@@ -139,36 +156,85 @@ function removeFile(index) {
     updateFileList();
 }
 
+
+// -------------------- TOAST --------------------
+function showToast(message, type="success") {
+
+    let toast = document.createElement("div");
+
+    toast.style.background = type === "success" ? "#28a745" : "#dc3545";
+    toast.style.color = "white";
+    toast.style.padding = "10px 15px";
+    toast.style.marginTop = "10px";
+    toast.style.borderRadius = "6px";
+    toast.style.boxShadow = "0 4px 10px rgba(0,0,0,0.1)";
+    toast.style.fontSize = "14px";
+
+    toast.innerText = message;
+
+    document.getElementById("toastBox").appendChild(toast);
+
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+
 // -------------------- SUBMIT --------------------
+let isUploading = false;
+
 document.getElementById("uploadForm").addEventListener("submit", async function(e) {
     e.preventDefault();
 
-    // Manual validation for files
+    if (isUploading) return;
+
     if (selectedFiles.length === 0) {
-        alert("Please select at least one file");
+        showToast("Please select at least one file", "error");
         return;
     }
 
+    isUploading = true;
+
+    let submitBtn = document.getElementById("uploadBtn");
+    submitBtn.disabled = true;
+    submitBtn.innerText = "Uploading...";
+
     let formData = new FormData(this);
 
-    // Append files manually
     selectedFiles.forEach(file => {
         formData.append("files", file);
     });
 
-    let res = await fetch("/api/upload-report", {
-        method: "POST",
-        body: formData
-    });
+    try {
 
-    let data = await res.json();
+        let res = await fetch("/api/upload-report", {
+            method: "POST",
+            body: formData
+        });
 
-    if (res.ok) {
-        alert("Uploaded successfully");
-        location.reload();
-    } else {
-        alert(data.error);
+        let data = await res.json();
+
+        if (res.ok) {
+            showToast("Uploaded successfully", "success");
+
+            setTimeout(() => {
+                location.reload();
+            }, 1500);
+
+        } else {
+            showToast(data.error || "Upload failed", "error");
+            submitBtn.disabled = false;
+            submitBtn.innerText = "Upload";
+            isUploading = false;
+        }
+
+    } catch (err) {
+        showToast("Network error", "error");
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Upload";
+        isUploading = false;
     }
+
 });
 
 </script>

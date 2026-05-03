@@ -99,6 +99,15 @@ def report_details(document_id):
     if not can_view(username, report, db):
         return "Access Denied", 403
 
+    # FIX: normalize files
+
+    if "files" in report:
+        pass  # already correct
+    elif "file_path" in report:
+       report["files"] = [report["file_path"]]
+    else:
+       report["files"] = []
+
     # LOG VIEW
     db.audit_logs.insert_one({
         "username": username,
@@ -325,9 +334,147 @@ def inject_user():
     return dict(username=session.get("username", "User"))
 
 
+# recent uploads
+
+@app.route("/api/recent-uploads")
+@login_required
+def recent_uploads():
+
+    pipeline = [
+        {
+            "$match": {
+                "action_type": "UPLOAD"
+            }
+        },
+        {
+            "$sort": {
+                "timestamp": -1
+            }
+        },
+        {
+            "$group": {
+                "_id": "$document_id",
+                "doc": { "$first": "$$ROOT" }
+            }
+        },
+        {
+            "$replaceRoot": {
+                "newRoot": "$doc"
+            }
+        },
+        {
+            "$limit": 5
+        }
+    ]
+
+    results = list(db.audit_logs.aggregate(pipeline))
+
+    output = []
+    for r in results:
+        output.append({
+            "document_id": r.get("document_id"),
+            "report_name": r.get("document_name"),
+            "report_type": r.get("report_type"),
+            "division": r.get("division"),
+            "report_date": r.get("timestamp").strftime("%Y-%m-%d %H:%M"),
+            "prepared_by": r.get("username")
+        })
+
+    return jsonify(output)
+
+
+@app.route("/api/log-upload", methods=["POST"])
+@login_required
+def log_upload():
+
+    data = request.json
+
+    db.audit_logs.insert_one({
+        "username": session.get("user"),
+        "action_type": "UPLOAD",
+        "document_id": data.get("document_id"),
+        "document_name": data.get("report_name"),
+        "report_type": data.get("report_type"),
+        "division": data.get("division"),
+        "timestamp": datetime.utcnow()
+    })
+
+    return jsonify({"msg": "logged"})
+
+
+# recent searches
+
+@app.route("/api/recent-searches")
+def recent_searches():
+
+    pipeline = [
+        {
+            "$match": {
+                "action_type": "SEARCH"
+            }
+        },
+        {
+            "$sort": {
+                "timestamp": -1
+            }
+        },
+        {
+            "$group": {
+                "_id": "$document_id",
+                "doc": { "$first": "$$ROOT" }
+            }
+        },
+        {
+            "$replaceRoot": {
+                "newRoot": "$doc"
+            }
+        },
+        {
+            "$limit": 5
+        }
+    ]
+
+    results = list(db.audit_logs.aggregate(pipeline))
+
+    # format response
+    output = []
+    for r in results:
+        output.append({
+            "document_id": r.get("document_id"),
+            "report_name": r.get("document_name"),
+            "report_type": r.get("report_type"),
+            "division": r.get("division"),
+            "date": r.get("timestamp").strftime("%Y-%m-%d %H:%M"),
+            "user": r.get("username")
+        })
+
+    return jsonify(output)
+
+
+@app.route("/api/log-search", methods=["POST"])
+def log_search():
+
+    data = request.json
+
+    db.audit_logs.insert_one({
+        "username": session.get("user"),
+        "action_type": "SEARCH",
+        "document_id": data.get("document_id"),
+        "document_name": data.get("report_name"),
+        "report_type": data.get("report_type"),
+        "division": data.get("division"),
+        "timestamp": datetime.utcnow()
+    })
+
+    return jsonify({"msg": "logged"})
+
+
 # ------------------ RUN ------------------
 
 if __name__ == "__main__":
     create_admin()
     create_default_roles()
     app.run(debug=True)
+
+if __name__ == "__main__":
+    app.run(debug=True, use_reloader=False)
